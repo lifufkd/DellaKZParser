@@ -16,5 +16,5 @@ if __name__ == '__main__':
     work_dir = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser(config_name)
     db = DB(config)
-    della_kz = Della(db, config.get_config()['url'])
+    della_kz = Della(db, config)
     della_kz.main()

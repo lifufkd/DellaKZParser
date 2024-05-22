@@ -29,7 +29,7 @@ class DB:
         self.__cursor = self.__db.cursor()
         self.__cursor.execute('''
         CREATE TABLE IF NOT EXISTS applications(
-            row_id INT AUTO_INCREMENT PRIMARY KEY,
+            row_id INT PRIMARY KEY,
             date_creation DATETIME,
             date_change DATETIME,
             transport_type TEXT,
