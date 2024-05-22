@@ -29,7 +29,7 @@ class DB:
         self.__cursor = self.__db.cursor()
         self.__cursor.execute('''
         CREATE TABLE IF NOT EXISTS applications(
-            row_id INT PRIMARY KEY,
+            row_id BIGINT unsigned PRIMARY KEY,
             date_creation DATETIME,
             date_change DATETIME,
             transport_type TEXT,
@@ -45,10 +45,11 @@ class DB:
             company_link TEXT,
             worker_creds TEXT,
             phone_number TEXT,
-            phone_number_watsapp TEXT,
+            phone_number_whatsapp TEXT,
             email TEXT,
             price INT,
-            tags_payment TEXT
+            tags_payment TEXT,
+            status TEXT
         )
         ''')
 
