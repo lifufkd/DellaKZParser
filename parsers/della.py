@@ -25,7 +25,7 @@ class Della:
         self.init()
 
     def init(self):
-        self.__driver = Driver(ad_block_on=True, uc=True)
+        self.__driver = Driver(ad_block_on=True, uc=True, headless=True)
         self.log_in()
 
     def log_in(self):
@@ -192,7 +192,7 @@ class Della:
                 card_id = card.get_attribute('id')
                 if card_id[:7] == "request":
                     if self.__crud.check_already_existed(int(card_id[8:])):
-                        print('111111')
+                        print(card_id)
                         return None
                     else:
                         try:
