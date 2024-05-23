@@ -17,10 +17,11 @@ from modules.CRUD import CRUD
 
 
 class Della:
-    def __init__(self, db, config):
+    def __init__(self, db, config, logger):
         super(Della, self).__init__()
         self.__driver = None
         self.__config = config
+        self.__logger = logger
         self.__elements = [
             ['date_ins', By.CLASS_NAME],
             ['date_up', By.CLASS_NAME],
@@ -28,7 +29,7 @@ class Della:
             ['weight', By.CLASS_NAME],
             ['cube', By.CLASS_NAME],
             ['request_route', By.CLASS_NAME],
-            ['cargo_type', By.CLASS_NAME],
+            ['request_text', 'cargo_type', By.CLASS_NAME],
             ['request_tags', By.CLASS_NAME, 'tag'],
             ['company_link', By.CLASS_NAME],
             ['contact_name', By.CLASS_NAME],
@@ -40,7 +41,7 @@ class Della:
         self.init()
 
     def init(self):
-        self.__driver = Driver(ad_block_on=True, uc=True, headless=True)
+        self.__driver = Driver(ad_block_on=True, uc=True, proxy="proxy1", headless2=True)
         self.log_in()
 
     def error_parse(self, output, quanity=1):
@@ -81,6 +82,9 @@ class Della:
                 elif index == 8:
                     company_data = card_obj.find_element(element[1], element[0])
                     data = [company_data.text, company_data.get_attribute('href')]
+                elif index == 6:
+                    data = [card_obj.find_element(element[2], element[0]).text,
+                            card_obj.find_element(element[2], element[1]).text]
                 elif index in [7, 12]:
                     data = card_obj.find_element(element[1], element[0]).find_elements(element[1], element[2])
                 elif index == 13:
@@ -104,7 +108,21 @@ class Della:
                     output.append(date_time_obj)
                 except:
                     self.error_parse(output)
-            elif index in [2, 6, 9]:
+            elif index == 6:
+                print(f'{data} CARGO')
+                temp = list()
+                start = 0
+                addition = data[0].replace(data[1], '').strip() + '  '
+                if ' ' in addition:
+                    for indexx, i in enumerate(addition):
+                        if i == ' ' and addition[indexx - 1] not in ['.', ':', ',']:
+                            if len(addition[start:indexx]) > 0:
+                                temp.append(addition[start:indexx])
+                            start = indexx + 1
+                else:
+                    temp.append(addition)
+                output.extend([data[1], json.dumps(temp)])
+            elif index in [2, 9]:
                 output.append(data)
             elif index in [3, 4]:
                 flag = False
@@ -187,8 +205,7 @@ class Della:
                     output.append(data)
                 else:
                     self.error_parse(output)
-        print(output)
-        print(len(output))
+        self.__logger.info(output)
         self.__crud.add_application(output)
 
     def main(self) -> None:
@@ -213,9 +230,9 @@ class Della:
                         try:
                             card.find_element(By.TAG_NAME, 'button').click()
                         except:
-                            print('button_dont_click')
+                            self.__logger.info('button_dont_click')
                         finally:
-                            time.sleep(3)
+                            time.sleep(self.__config.get_config()['timeout_cards_btn'])
                             self.parse_card(card_id, card)
             page += 1
 
