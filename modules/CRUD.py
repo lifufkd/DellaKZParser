@@ -28,3 +28,11 @@ class CRUD:
         if len(data) > 0:
             if data[0]['COUNT(*)'] > 0:
                 return True
+
+    def get_status(self, row_id):
+        return self.__db.db_read('SELECT status FROM applications WHERE row_id = %s', (row_id, ))[0]['status']
+
+    def update_application(self, row_id, new_status):
+        if self.get_status(row_id) != new_status:
+            self.__db.db_write('UPDATE applications SET status = %s WHERE row_id = %s', (new_status, row_id))
+            return True
