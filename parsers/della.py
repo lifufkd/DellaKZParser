@@ -228,8 +228,12 @@ class Della:
                             return None
                     else:
                         try:
-                            card.find_element(By.TAG_NAME, 'button').click()
-                        except:
+                            button = card.find_element(By.CLASS_NAME, 'show_request_info_btn')
+                            self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
+                            button.click()
+                            time.sleep(1)
+                        except Exception as e:
+                            print(e)
                             self.__logger.info('button_dont_click')
                         finally:
                             time.sleep(self.__config.get_config()['timeout_cards_btn'])
