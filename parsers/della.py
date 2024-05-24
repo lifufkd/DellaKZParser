@@ -41,7 +41,10 @@ class Della:
         self.init()
 
     def init(self):
-        self.__driver = Driver(ad_block_on=True, uc=True, proxy="proxy1", headless2=True)
+        # agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1")
+        user_agent = self.__driver.execute_script("return navigator.userAgent;")
+        print(user_agent)
         self.log_in()
 
     def error_parse(self, output, quanity=1):
