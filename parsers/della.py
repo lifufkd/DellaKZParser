@@ -22,6 +22,8 @@ class Della:
         self.__driver = None
         self.__config = config
         self.__logger = logger
+        self.__cards_parsed = 0
+        self.__creds_index = 0
         self.__elements = [
             ['date_ins', By.CLASS_NAME],
             ['date_up', By.CLASS_NAME],
@@ -42,27 +44,35 @@ class Della:
 
     def init(self):
         # agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1")
-        user_agent = self.__driver.execute_script("return navigator.userAgent;")
-        print(user_agent)
-        self.log_in()
+        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True, uc_cdp_events=True, headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
+        self.__driver.get(self.__config.get_config()['home_page'])
+        time.sleep(5)
+        self.__driver.get_screenshot_as_file('gay.png')
+        time.sleep(999999999)
+        self.log_in(self.__config.get_accounts_config())
 
     def error_parse(self, output, quanity=1):
         for g in range(quanity):
             output.append(None)
 
-    def log_in(self):
-        self.__driver.get(self.__config.get_config()['home_page'])
-        time.sleep(3)
+    def log_in(self, creds):
         self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[1]/td/table/tbody/tr[1]/td[3]/div[3]/div/div[1]').click()
         time.sleep(1)
         form = self.__driver.find_element(By.XPATH, '/html/body/div[6]/div/div[3]')
         time.sleep(random.random() * 3)
-        form.find_element(By.ID, 'login').send_keys(self.__config.get_config()['account_login'])
+        form.find_element(By.ID, 'login').send_keys(creds[self.__creds_index][0])
         time.sleep(random.random() * 5)
-        form.find_element(By.ID, 'password').send_keys(self.__config.get_config()['account_password'])
+        form.find_element(By.ID, 'password').send_keys(creds[self.__creds_index][1])
         time.sleep(random.random() * 2)
         form.find_elements(By.TAG_NAME, 'button')[1].click()
+        time.sleep(random.random() * 2)
+
+    def log_out(self):
+        self.__driver.find_element(By.CSS_SELECTOR, 'div#logged_div > div > div > span').click()
+        time.sleep(random.random() * 3)
+        self.__driver.find_element(By.CSS_SELECTOR, 'a#exit_link').click()
+        time.sleep(random.random() * 3)
+        self.__driver.switch_to.alert.accept()
 
     def recheck_card(self, card_id, card_obj):
         flag = False
@@ -218,12 +228,18 @@ class Della:
             actual_url = self.__config.get_config()['url'] + f'r{page*page_multiplayer}l100.html'
             self.__driver.get(actual_url)
             time.sleep(5)
-            # self.__driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            # time.sleep(10)
             cards = self.__driver.find_element(By.CSS_SELECTOR, 'div#request_list_main').find_elements(By.XPATH, "./*")
             for card in cards:
                 card_id = card.get_attribute('id')
                 if card_id[:7] == "request":
+                    if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit']:
+                        if len(self.__config.get_accounts_config())-1 >= self.__creds_index:
+                            self.__creds_index = 0
+                        else:
+                            self.__creds_index += 1
+                        self.log_out()
+                        time.sleep(5)
+                        self.log_in(self.__config.get_accounts_config())
                     if self.__crud.check_already_existed(int(card_id[8:])):
                         if self.recheck_card(card_id, card):
                             continue
@@ -233,14 +249,14 @@ class Della:
                         try:
                             button = card.find_element(By.CLASS_NAME, 'show_request_info_btn')
                             self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
-                            button.click()
                             time.sleep(1)
-                        except Exception as e:
-                            print(e)
+                            button.click()
+                        except:
                             self.__logger.info('button_dont_click')
                         finally:
                             time.sleep(self.__config.get_config()['timeout_cards_btn'])
                             self.parse_card(card_id, card)
+                    self.__cards_parsed += 1
             page += 1
 
     def __del__(self):
