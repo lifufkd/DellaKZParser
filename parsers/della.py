@@ -47,7 +47,7 @@ class Della:
         self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True, uc_cdp_events=True, headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
         self.__driver.get(self.__config.get_config()['home_page'])
         time.sleep(5)
-        self.__driver.get_screenshot_as_file('gay.png')
+        self.__driver.get_screenshot_as_file('test.png')
         time.sleep(999999999)
         self.log_in(self.__config.get_accounts_config())
 
