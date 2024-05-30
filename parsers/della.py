@@ -43,12 +43,9 @@ class Della:
         self.init()
 
     def init(self):
-        # agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True, uc_cdp_events=True, headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
+        # , headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True, uc_cdp_events=True)
         self.__driver.get(self.__config.get_config()['home_page'])
-        time.sleep(5)
-        self.__driver.get_screenshot_as_file('test.png')
-        time.sleep(999999999)
         self.log_in(self.__config.get_accounts_config())
 
     def error_parse(self, output, quanity=1):
@@ -56,23 +53,45 @@ class Della:
             output.append(None)
 
     def log_in(self, creds):
-        self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[1]/td/table/tbody/tr[1]/td[3]/div[3]/div/div[1]').click()
-        time.sleep(1)
-        form = self.__driver.find_element(By.XPATH, '/html/body/div[6]/div/div[3]')
-        time.sleep(random.random() * 3)
-        form.find_element(By.ID, 'login').send_keys(creds[self.__creds_index][0])
-        time.sleep(random.random() * 5)
-        form.find_element(By.ID, 'password').send_keys(creds[self.__creds_index][1])
-        time.sleep(random.random() * 2)
-        form.find_elements(By.TAG_NAME, 'button')[1].click()
-        time.sleep(random.random() * 2)
+        while True:
+            try:
+                self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[1]/td/table/tbody/tr[1]/td[3]/div[3]/div/div[1]').click()
+                time.sleep(1)
+                form = self.__driver.find_element(By.CSS_SELECTOR, 'div#signinmwnd > div:nth-of-type(3)')
+                time.sleep(random.random() * 3)
+                form.find_element(By.ID, 'login').send_keys(creds[self.__creds_index][0])
+                time.sleep(random.random() * 5)
+                form.find_element(By.ID, 'password').send_keys(creds[self.__creds_index][1])
+                time.sleep(random.random() * 2)
+                form.find_elements(By.TAG_NAME, 'button')[1].click()
+                time.sleep(random.random() * 2)
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(3)
 
     def log_out(self):
-        self.__driver.find_element(By.CSS_SELECTOR, 'div#logged_div > div > div > span').click()
-        time.sleep(random.random() * 3)
-        self.__driver.find_element(By.CSS_SELECTOR, 'a#exit_link').click()
-        time.sleep(random.random() * 3)
-        self.__driver.switch_to.alert.accept()
+        c = 0
+        while True:
+            try:
+                c += 1
+                print('weqweqw')
+                self.__driver.find_element(By.CSS_SELECTOR, 'div#logged_div > div > div > span').click()
+                time.sleep(random.random() * 3)
+                self.__driver.find_element(By.CSS_SELECTOR, 'a#exit_link').click()
+                time.sleep(random.random() * 3)
+                self.__driver.switch_to.alert.accept()
+                break
+            except:
+                time.sleep(3)
+            if c >= 5:
+                break
+
+    def close_sign_up_menu(self):
+        try:
+            self.__driver.find_element(By.CSS_SELECTOR, 'div#signupmwnd > div:nth-of-type(2) > img').click()
+        except:
+            pass
 
     def recheck_card(self, card_id, card_obj):
         flag = False
@@ -110,6 +129,10 @@ class Della:
                         self.error_parse(output, 3)
                     case 8:
                         self.error_parse(output, 2)
+                    case 5:
+                        self.error_parse(output, 4)
+                    case 6:
+                        self.error_parse(output, 2)
                     case _:
                         self.error_parse(output)
                 continue
@@ -123,18 +146,21 @@ class Della:
                     self.error_parse(output)
             elif index == 6:
                 print(f'{data} CARGO')
-                temp = list()
-                start = 0
-                addition = data[0].replace(data[1], '').strip() + '  '
-                if ' ' in addition:
-                    for indexx, i in enumerate(addition):
-                        if i == ' ' and addition[indexx - 1] not in ['.', ':', ',']:
-                            if len(addition[start:indexx]) > 0:
-                                temp.append(addition[start:indexx])
-                            start = indexx + 1
-                else:
-                    temp.append(addition)
-                output.extend([data[1], json.dumps(temp)])
+                try:
+                    temp = list()
+                    start = 0
+                    addition = data[0].replace(data[1], '').strip() + '  '
+                    if ' ' in addition:
+                        for indexx, i in enumerate(addition):
+                            if i == ' ' and addition[indexx - 1] not in ['.', ':', ',']:
+                                if len(addition[start:indexx]) > 0:
+                                    temp.append(addition[start:indexx])
+                                start = indexx + 1
+                    else:
+                        temp.append(addition)
+                    output.extend([data[1], json.dumps(temp)])
+                except:
+                    self.error_parse(output, 2)
             elif index in [2, 9]:
                 output.append(data)
             elif index in [3, 4]:
@@ -183,9 +209,12 @@ class Della:
             # tags
             elif index in [7, 12]:
                 temp = list()
-                for i in data:
-                    temp.append(i.text)
-                output.append(json.dumps(temp))
+                try:
+                    for i in data:
+                        temp.append(i.text)
+                    output.append(json.dumps(temp))
+                except:
+                    self.error_parse(output)
             elif index == 8:
                 output.extend(data)
             elif index == 10:
@@ -219,45 +248,48 @@ class Della:
                 else:
                     self.error_parse(output)
         self.__logger.info(output)
-        self.__crud.add_application(output)
+        try:
+            self.__crud.add_application(output)
+        except:
+            pass
 
-    def main(self) -> None:
-        page = 0
-        page_multiplayer = 100
-        while True:
-            actual_url = self.__config.get_config()['url'] + f'r{page*page_multiplayer}l100.html'
-            self.__driver.get(actual_url)
-            time.sleep(5)
-            cards = self.__driver.find_element(By.CSS_SELECTOR, 'div#request_list_main').find_elements(By.XPATH, "./*")
-            for card in cards:
-                card_id = card.get_attribute('id')
-                if card_id[:7] == "request":
-                    if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit']:
-                        if len(self.__config.get_accounts_config())-1 >= self.__creds_index:
-                            self.__creds_index = 0
-                        else:
-                            self.__creds_index += 1
-                        self.log_out()
-                        time.sleep(5)
-                        self.log_in(self.__config.get_accounts_config())
-                    if self.__crud.check_already_existed(int(card_id[8:])):
-                        if self.recheck_card(card_id, card):
-                            continue
-                        else:
-                            return None
+    def main(self) -> False or True:
+        actual_url = self.__config.get_config()['url']
+        self.__driver.get(actual_url)
+        time.sleep(5)
+        cards = self.__driver.find_element(By.CSS_SELECTOR, 'div#request_list_main').find_elements(By.XPATH, "./*")
+        for card in cards:
+            card_id = card.get_attribute('id')
+            if card_id[:7] == "request":
+                if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit'] and len(self.__config.get_accounts_config()) > 1:
+                    self.__cards_parsed = 0
+                    if len(self.__config.get_accounts_config())-1 >= self.__creds_index:
+                        self.__creds_index = 0
                     else:
-                        try:
-                            button = card.find_element(By.CLASS_NAME, 'show_request_info_btn')
-                            self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
-                            time.sleep(1)
-                            button.click()
-                        except:
-                            self.__logger.info('button_dont_click')
-                        finally:
-                            time.sleep(self.__config.get_config()['timeout_cards_btn'])
-                            self.parse_card(card_id, card)
-                    self.__cards_parsed += 1
-            page += 1
+                        self.__creds_index += 1
+                    self.close_sign_up_menu()
+                    time.sleep(random.random() * 3)
+                    self.log_out()
+                    time.sleep(5)
+                    self.log_in(self.__config.get_accounts_config())
+                    return False
+                if self.__crud.check_already_existed(int(card_id[8:])):
+                    if self.recheck_card(card_id, card):
+                        continue
+                    else:
+                        return True
+                else:
+                    try:
+                        button = card.find_element(By.CLASS_NAME, 'show_request_info_btn')
+                        self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
+                        time.sleep(1)
+                        button.click()
+                    except:
+                        self.__logger.info('button_dont_click')
+                    finally:
+                        time.sleep(self.__config.get_config()['timeout_cards_btn'])
+                        self.parse_card(card_id, card)
+                self.__cards_parsed += 1
 
     def __del__(self):
         self.__driver.quit()
