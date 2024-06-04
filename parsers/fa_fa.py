@@ -1,6 +1,5 @@
 #################################################
 #                 created by                    #
-#                     ZZS                       #
 #                     SBR                       #
 #################################################
 import json
@@ -16,9 +15,9 @@ from modules.CRUD import CRUD
 #################################################
 
 
-class Della:
+class FaFa:
     def __init__(self, db, config, logger):
-        super(Della, self).__init__()
+        super(FaFa, self).__init__()
         self.__driver = None
         self.__config = config
         self.__logger = logger
@@ -44,9 +43,10 @@ class Della:
 
     def init(self):
         # , headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True, uc_cdp_events=True)
-        self.__driver.get(self.__config.get_config()['della_home_page'])
-        self.log_in(self.__config.get_accounts_config_della())
+        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True,
+                               uc_cdp_events=True)
+        self.__driver.get(self.__config.get_config()['fafa_home_page'])
+        self.log_in(self.__config.get_accounts_config_fafa())
 
     def error_parse(self, output, quanity=1):
         for g in range(quanity):
@@ -55,15 +55,11 @@ class Della:
     def log_in(self, creds):
         while True:
             try:
-                self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[1]/td/table/tbody/tr[1]/td[3]/div[3]/div/div[1]').click()
-                time.sleep(1)
-                form = self.__driver.find_element(By.CSS_SELECTOR, 'div#signinmwnd > div:nth-of-type(3)')
-                time.sleep(random.random() * 3)
-                form.find_element(By.ID, 'login').send_keys(creds[self.__creds_index][0])
+                self.__driver.find_element(By.CSS_SELECTOR, 'div#header1 > table > tbody > tr > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(4) > table > tbody > tr > td:nth-of-type(4) > form > input:nth-of-type(2)').send_keys(creds[self.__creds_index][0])
                 time.sleep(random.random() * 5)
-                form.find_element(By.ID, 'password').send_keys(creds[self.__creds_index][1])
+                self.__driver.find_element(By.CSS_SELECTOR, 'input#f_pass').send_keys(creds[self.__creds_index][1])
                 time.sleep(random.random() * 2)
-                form.find_elements(By.TAG_NAME, 'button')[1].click()
+                self.__driver.find_element(By.CSS_SELECTOR, 'div#header1 > table > tbody > tr > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(4) > table > tbody > tr > td:nth-of-type(4) > form > input:nth-of-type(4)').click()
                 time.sleep(random.random() * 2)
                 break
             except Exception as e:
@@ -75,12 +71,8 @@ class Della:
         while True:
             try:
                 c += 1
-                print('weqweqw')
-                self.__driver.find_element(By.CSS_SELECTOR, 'div#logged_div > div > div > span').click()
+                self.__driver.find_element(By.CSS_SELECTOR, 'div#header1 > table > tbody > tr > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(4) > table > tbody > tr > td > a').click()
                 time.sleep(random.random() * 3)
-                self.__driver.find_element(By.CSS_SELECTOR, 'a#exit_link').click()
-                time.sleep(random.random() * 3)
-                self.__driver.switch_to.alert.accept()
                 break
             except:
                 time.sleep(3)
@@ -110,7 +102,9 @@ class Della:
         for index, element in enumerate(self.__elements):
             try:
                 if index == 10:
-                    data = [card_obj.find_elements(element[3], element[0]), card_obj.find_elements(element[3], element[1]), card_obj.find_elements(element[3], element[2])]
+                    data = [card_obj.find_elements(element[3], element[0]),
+                            card_obj.find_elements(element[3], element[1]),
+                            card_obj.find_elements(element[3], element[2])]
                 elif index == 8:
                     company_data = card_obj.find_element(element[1], element[0])
                     data = [company_data.text, company_data.get_attribute('href')]
@@ -138,7 +132,7 @@ class Della:
                 continue
             if index in range(2):
                 try:
-                    date = data[data.index('.')+2:]
+                    date = data[data.index('.') + 2:]
                     formated_date = date[:5] + f'.{datetime.now().year}' + date[5:]
                     date_time_obj = datetime.strptime(formated_date, "%d.%m.%Y %H:%M")
                     output.append(date_time_obj)
@@ -169,7 +163,7 @@ class Della:
                     try:
                         if '-' in data:
                             t_index = data.index('-')
-                            output.append(float(data[t_index+1:data.index(i)].replace(',', '.')))
+                            output.append(float(data[t_index + 1:data.index(i)].replace(',', '.')))
                         else:
                             output.append(float(data[:data.index(i)].replace(',', '.')))
                         flag = True
@@ -254,24 +248,25 @@ class Della:
             pass
 
     def main(self) -> False or True:
-        actual_url = self.__config.get_config()['della_url']
+        actual_url = self.__config.get_config()['fafa_url']
         self.__driver.get(actual_url)
         time.sleep(5)
         cards = self.__driver.find_element(By.CSS_SELECTOR, 'div#request_list_main').find_elements(By.XPATH, "./*")
         for card in cards:
             card_id = card.get_attribute('id')
             if card_id[:7] == "request":
-                if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit'] and len(self.__config.get_accounts_config_della()) > 1:
+                if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit'] and len(
+                        self.__config.get_accounts_config_fafa()) > 1:
                     self.__cards_parsed = 0
-                    if len(self.__config.get_accounts_config_della())-1 >= self.__creds_index:
+                    if len(self.__config.get_accounts_config_fafa()) - 1 >= self.__creds_index:
                         self.__creds_index = 0
                     else:
                         self.__creds_index += 1
-                    self.close_sign_up_menu()
-                    time.sleep(random.random() * 3)
+                    # self.close_sign_up_menu()
+                    # time.sleep(random.random() * 3)
                     self.log_out()
                     time.sleep(5)
-                    self.log_in(self.__config.get_accounts_config_della())
+                    self.log_in(self.__config.get_accounts_config_fafa())
                     return False
                 if self.__crud.check_already_existed(int(card_id[8:])):
                     if self.recheck_card(card_id, card):
