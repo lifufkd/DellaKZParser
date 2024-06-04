@@ -3,6 +3,7 @@
 #                     SBR                       #
 #################################################
 import json
+import sys
 import threading
 import time
 import random
@@ -279,7 +280,12 @@ class FaFa:
                         self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
                         time.sleep(1)
                         button.click()
-                    except:
+                    except Exception as e:
+                        if 'register()' in e:
+                            self.__logger.info(
+                                f'account {self.__config.get_accounts_config()[self.__creds_index][0]} has banned. Exiting...')
+                            sys.exit(
+                                f'account {self.__config.get_accounts_config()[self.__creds_index][0]} has banned. Exiting...')
                         self.__logger.info('button_dont_click')
                     finally:
                         time.sleep(self.__config.get_config()['timeout_cards_btn'])
