@@ -4,7 +4,11 @@
 #                     SBR                       #
 #################################################
 import json
-import threading
+import sys
+
+import selenium_dolphin as dolphin
+from selenium_dolphin import DolphinAPI, STABLE_CHROME_VERSION
+from selenium.webdriver.chrome.options import Options
 import time
 import random
 from seleniumbase import Driver
@@ -43,19 +47,38 @@ class Della:
         self.init()
 
     def init(self):
-        # , headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True, uc_cdp_events=True)
+        api = DolphinAPI(api_key=self.__config.get_config()['dolphin_api_key'])
+        response = api.get_profiles()
+        if response['data']:
+            profile_id = response['data'][-1]['id']
+            if profile_id:
+                api.delete_profiles([profile_id])
+        fingerprint = []
+        while not fingerprint:
+            fingerprint = api.generate_fingerprint(platform='linux',
+                                                   browser_version=f'{random.randint(114, STABLE_CHROME_VERSION)}')
+        data = api.fingerprint_to_profile(name='my superprofile', fingerprint=fingerprint)
+        profile_id = api.create_profile(data)['browserProfileId']
+        response = dolphin.run_profile(profile_id, headless=False)
+        port = response['automation']['port']
+        ##### custom chrome options demonstration #####
+        options = Options()
+        options.add_argument("--headless=new")
+        ###############################################
+        self.__driver = dolphin.get_driver(options=options, port=port)
         self.__driver.get(self.__config.get_config()['home_page'])
-        self.log_in(self.__config.get_accounts_config())
+        time.sleep(5)
+        self.log_in(self.__config.get_accounts_config(), [By.CSS_SELECTOR, 'div#unlogged_div > div > div'])
 
     def error_parse(self, output, quanity=1):
         for g in range(quanity):
             output.append(None)
 
-    def log_in(self, creds):
+    def log_in(self, creds, method):
         while True:
             try:
-                self.__driver.find_element(By.XPATH, '/html/body/table/tbody/tr[1]/td/table/tbody/tr[1]/td[3]/div[3]/div/div[1]').click()
+                self.__driver.find_element(method[0], method[1]).click()
+                print(11111111111111111111111111111)
                 time.sleep(1)
                 form = self.__driver.find_element(By.CSS_SELECTOR, 'div#signinmwnd > div:nth-of-type(3)')
                 time.sleep(random.random() * 3)
@@ -75,7 +98,6 @@ class Della:
         while True:
             try:
                 c += 1
-                print('weqweqw')
                 self.__driver.find_element(By.CSS_SELECTOR, 'div#logged_div > div > div > span').click()
                 time.sleep(random.random() * 3)
                 self.__driver.find_element(By.CSS_SELECTOR, 'a#exit_link').click()
@@ -271,7 +293,7 @@ class Della:
                     time.sleep(random.random() * 3)
                     self.log_out()
                     time.sleep(5)
-                    self.log_in(self.__config.get_accounts_config())
+                    self.log_in(self.__config.get_accounts_config(), [By.CSS_SELECTOR, 'div#unlogged_div > div > div'])
                     return False
                 if self.__crud.check_already_existed(int(card_id[8:])):
                     if self.recheck_card(card_id, card):
@@ -284,7 +306,10 @@ class Della:
                         self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
                         time.sleep(1)
                         button.click()
-                    except:
+                    except Exception as e:
+                        if 'register()' in e:
+                            self.__logger.info(f'account {self.__config.get_accounts_config()[self.__creds_index][0]} has banned. Exiting...')
+                            sys.exit(f'account {self.__config.get_accounts_config()[self.__creds_index][0]} has banned. Exiting...')
                         self.__logger.info('button_dont_click')
                     finally:
                         time.sleep(self.__config.get_config()['timeout_cards_btn'])
