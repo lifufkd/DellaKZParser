@@ -248,13 +248,13 @@ class FaFa:
             pass
 
     def main(self) -> False or True:
-        actual_url = self.__config.get_config()['fafa_url']
-        self.__driver.get(actual_url)
-        time.sleep(5)
-        cards = self.__driver.find_element(By.CSS_SELECTOR, 'div#request_list_main').find_elements(By.XPATH, "./*")
-        for card in cards:
-            card_id = card.get_attribute('id')
-            if card_id[:7] == "request":
+        links_parts = self.__config.get_config()['fafa_url'].split('*')
+        for i in range(self.__config.get_config()['fafa_page_limit']):
+            self.__driver.get(f'{links_parts[0]}{i+1}{links_parts[1]}')
+            time.sleep(5)
+            cards = self.__driver.find_element(By.CSS_SELECTOR, 'html > body > table > tbody > tr:nth-of-type(2) > td > table:nth-of-type(2)').find_elements(By.XPATH, "//*[contains(@id,'res_')]")
+            for card in cards:
+                card_id = card.get_attribute('id')
                 if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit'] and len(
                         self.__config.get_accounts_config_fafa()) > 1:
                     self.__cards_parsed = 0
@@ -268,7 +268,7 @@ class FaFa:
                     time.sleep(5)
                     self.log_in(self.__config.get_accounts_config_fafa())
                     return False
-                if self.__crud.check_already_existed(int(card_id[8:])):
+                if self.__crud.check_already_existed(int(card_id)):
                     if self.recheck_card(card_id, card):
                         continue
                     else:
