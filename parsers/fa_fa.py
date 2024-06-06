@@ -38,7 +38,7 @@ class FaFa:
         self.init()
 
     def parse_card(self, card_id, card_obj):
-        output = [card_id[8:]]
+        output = [card_id]
         for index, element in enumerate(self.__elements):
             try:
                 if index == 0:
@@ -59,23 +59,33 @@ class FaFa:
                         3].text
                 elif index == 6:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
-                        6].find_elements(By.TAG_NAME, "div")[0]
+                        5].find_elements(By.TAG_NAME, "div")[0].find_element(By.TAG_NAME, "a")
                 elif index == 7:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
-                        6].find_elements(By.TAG_NAME, "div")[2].text
+                        5].find_element(By.TAG_NAME, "td").find_elements(By.TAG_NAME, "div")[2].text
                 elif index == 8:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
                         3].text
             except:
                 match index:
-                    case 10:
-                        self.error_parse(output, 3)
-                    case 8:
+                    case 0:
+                        self.error_parse(output, 2)
+                    case 1:
+                        self.error_parse(output, 1)
+                    case 2:
+                        self.error_parse(output, 1)
+                    case 3:
+                        self.error_parse(output, 4)
+                    case 4:
                         self.error_parse(output, 2)
                     case 5:
-                        self.error_parse(output, 4)
+                        self.error_parse(output, 1)
                     case 6:
                         self.error_parse(output, 2)
+                    case 7:
+                        self.error_parse(output, 4)
+                    case 8:
+                        self.error_parse(output, 3)
                     case _:
                         self.error_parse(output)
                 continue
@@ -156,11 +166,18 @@ class FaFa:
                 except:
                     self.error_parse(output, 2)
             elif index == 5:
+                success = False
                 try:
-                    data = data.split('\n')[3]
-                    output.append(data)
+                    data = data.split('\n')[2:]
+                    for i in data:
+                        if i[0] == ' ':
+                            success = True
+                            output.append(i[1:])
+                            break
+                    if not success:
+                        raise
                 except:
-                    self.error_parse(output, 2)
+                    self.error_parse(output)
             elif index == 6:
                 try:
                     output.extend([data.text, data.get_attribute('href')])
@@ -169,29 +186,43 @@ class FaFa:
                     self.error_parse(output, 2)
             elif index == 7:
                 try:
-                    temp = [data[0], None, None, None]
-                    for i in data[1:-1]:
-                        if '+' in i:
-                            temp[0] = i
-                            temp[1] = i
-                        elif '@' in i:
-                            temp[2] = i
-                    output.extend(temp)
-                    print(output, 'creds')
+                    print(data, 'phones')
+                    if data != 'Для просмотра контактов нужно заполнить информацию о себе.':
+                        temp = [data[0], None, None, None]
+                        for i in data[1:-1]:
+                            if '+' in i:
+                                temp[1] = i
+                                temp[2] = i
+                            elif '@' in i:
+                                temp[3] = i
+                        output.extend(temp)
+                        print(output, 'creds')
+                    else:
+                        raise
                 except:
                     self.error_parse(output, 4)
             elif index == 8:
+                success = False
                 try:
-                    data = data.split('\n')[4]
-                    price = data[:data.index(' тнг')]
-                    if '.' in price:
-                        price = price.replace('.', '')
-                    output.extend([price, None, 'НОВАЯ'])
-                    print(output, 'price')
-                except:
+                    data = data.split('\n')[2:]
+                    print(data, 'prices')
+                    for i in data:
+                        if ' тнг' in i:
+                            success = True
+                            price = i[1:][:i[1:].index(' тнг')]
+                            if '.' in price:
+                                price = price.replace('.', '')
+                                output.extend([price, None, 'НОВАЯ'])
+                                print(output, 'price')
+                                break
+                    if not success:
+                        raise
+                except Exception as e:
+                    print(e)
                     self.error_parse(output, 3)
         self.__logger.info(output)
         try:
+            print(output, 'itog')
             self.__crud.add_application(output)
         except:
             pass
@@ -240,6 +271,13 @@ class FaFa:
         except:
             pass
 
+    def fill_form(self):
+        self.__driver.get(self.__config.get_config()['fafa_url'])
+        self.__driver.find_element(By.CSS_SELECTOR, 'input#search1').send_keys('Казахстан')
+        self.__driver.find_element(By.CSS_SELECTOR, 'input#search10').send_keys('Казахстан')
+        self.__driver.find_element(By.CSS_SELECTOR, 'div#typesb > table > tbody > tr:nth-of-type(3) > td > input').click()
+
+
     def recheck_card(self, card_id, card_obj):
         flag = False
         for i in range(2):
@@ -253,10 +291,12 @@ class FaFa:
             return self.__crud.update_application(card_id[8:], data)
 
     def main(self) -> False or True:
-        links_parts = self.__config.get_config()['fafa_url'].split('*')
+        self.fill_form()
+        time.sleep(random.random() * 3)
+        links_parts = self.__driver.current_url.split('?')
         first_card = True
         for i in range(self.__config.get_config()['fafa_page_limit']):
-            self.__driver.get(f'{links_parts[0]}{i+1}{links_parts[1]}')
+            self.__driver.get(f'{links_parts[0]}{i+1}/?{links_parts[1]}')
             time.sleep(5)
             cards = self.__driver.find_element(By.CSS_SELECTOR, 'html > body > table > tbody > tr:nth-of-type(2) > td > table:nth-of-type(2)').find_elements(By.XPATH, "//*[contains(@id,'res_')]")
             for card in cards:
