@@ -319,8 +319,8 @@ class FaFa:
         self.fill_form()
         time.sleep(random.random() * 3)
         links_parts = self.__driver.current_url.split('?')
-        first_card = True
         for i in range(self.__config.get_config()['fafa_page_limit']):
+            first_card = True
             self.__driver.get(f'{links_parts[0]}{i+1}/?{links_parts[1]}')
             time.sleep(5)
             cards = self.__driver.find_element(By.CSS_SELECTOR, 'html > body > table > tbody > tr:nth-of-type(2) > td > table:nth-of-type(2)').find_elements(By.XPATH, "//*[contains(@id,'res_')]")
