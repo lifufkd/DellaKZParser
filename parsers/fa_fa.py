@@ -62,7 +62,7 @@ class FaFa:
                         5].find_elements(By.TAG_NAME, "div")[0].find_element(By.TAG_NAME, "a")
                 elif index == 7:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
-                        5].find_element(By.TAG_NAME, "td").find_elements(By.TAG_NAME, "div")[2].text
+                        5].find_element(By.TAG_NAME, "td").find_elements(By.TAG_NAME, "div")[1].text
                 elif index == 8:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
                         3].text
@@ -73,7 +73,7 @@ class FaFa:
                     case 1:
                         self.error_parse(output, 1)
                     case 2:
-                        self.error_parse(output, 1)
+                        self.error_parse(output, 2)
                     case 3:
                         self.error_parse(output, 4)
                     case 4:
@@ -85,7 +85,7 @@ class FaFa:
                     case 7:
                         self.error_parse(output, 4)
                     case 8:
-                        self.error_parse(output, 3)
+                        self.error_parse(output, 2)
                     case _:
                         self.error_parse(output)
                 continue
@@ -134,7 +134,7 @@ class FaFa:
                     output.extend([float(weight), float(volume)])
                     print(output, 'weight and volume')
                 except:
-                    self.error_parse(output)
+                    self.error_parse(output, 2)
             elif index == 3:
                 temp = []
                 try:
@@ -185,20 +185,23 @@ class FaFa:
                 except:
                     self.error_parse(output, 2)
             elif index == 7:
+                temp = [None, None, None, None]
                 try:
+                    data = data.replace('\n', ' ')
                     print(data, 'phones')
-                    if data != 'Для просмотра контактов нужно заполнить информацию о себе.':
-                        temp = [data[0], None, None, None]
-                        for i in data[1:-1]:
-                            if '+' in i:
-                                temp[1] = i
-                                temp[2] = i
-                            elif '@' in i:
-                                temp[3] = i
-                        output.extend(temp)
-                        print(output, 'creds')
+                    if ':' in data:
+                        temp[0] = data[:data.index(':')]
+                        data = data[data.index(':')+2:].split(' ')
                     else:
-                        raise
+                        data = data.split(' ')
+                    for i in data:
+                        if '+' in i:
+                            temp[1] = i
+                            temp[2] = i
+                        elif '@' in i:
+                            temp[3] = i
+                    output.extend(temp)
+                    print(output, 'creds')
                 except:
                     self.error_parse(output, 4)
             elif index == 8:
@@ -209,28 +212,50 @@ class FaFa:
                     for i in data:
                         if ' тнг' in i:
                             success = True
-                            price = i[1:][:i[1:].index(' тнг')]
+                            price = i[:i.index(' тнг')]
                             if '.' in price:
                                 price = price.replace('.', '')
-                                output.extend([price, None, 'НОВАЯ'])
+                                output.extend([price, None])
                                 print(output, 'price')
                                 break
                     if not success:
                         raise
                 except Exception as e:
                     print(e)
-                    self.error_parse(output, 3)
+                    self.error_parse(output, 2)
         self.__logger.info(output)
         try:
+            output.append('НОВАЯ')
             print(output, 'itog')
             self.__crud.add_application(output)
         except:
             pass
 
+    def close_tab_by_domain(self, driver, domain_name):
+        # Get the handle of the current window
+        original_window = driver.current_window_handle
+
+        # Get all window handles
+        all_windows = driver.window_handles
+
+        for window in all_windows:
+            driver.switch_to.window(window)
+            current_url = driver.current_url
+
+            # Check if the current URL contains the domain name
+            if domain_name in current_url:
+                driver.close()
+                break
+
+        # Switch back to the original window
+        driver.switch_to.window(original_window)
+
     def init(self):
         # , headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
-        self.__driver = Driver(ad_block_on=True, uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True,
-                               uc_cdp_events=True)
+        self.__driver = Driver(uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True,
+                               uc_cdp_events=True, extension_dir='./adblock')
+        time.sleep(20)
+        self.close_tab_by_domain(self.__driver, 'welcome.adblockplus.org')
         self.__driver.get(self.__config.get_config()['fafa_home_page'])
         self.log_in(self.__config.get_accounts_config_fafa())
 
@@ -301,10 +326,8 @@ class FaFa:
             cards = self.__driver.find_element(By.CSS_SELECTOR, 'html > body > table > tbody > tr:nth-of-type(2) > td > table:nth-of-type(2)').find_elements(By.XPATH, "//*[contains(@id,'res_')]")
             for card in cards:
                 card_id = card.get_attribute('id')[4:]
-                print(card_id)
                 if self.__cards_parsed >= self.__config.get_config()['change_account_cards_limit'] and len(
                         self.__config.get_accounts_config_fafa()) > 1:
-                    print('nooooooo')
                     self.__cards_parsed = 0
                     if len(self.__config.get_accounts_config_fafa()) - 1 >= self.__creds_index:
                         self.__creds_index = 0
@@ -322,15 +345,12 @@ class FaFa:
                     else:
                         return True
                 else:
-                    print('god damn rigt')
                     try:
                         button = card.find_element(By.CSS_SELECTOR, f'font#head_{card_id}')
                         self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
                         time.sleep(1)
                         button.click()
-                        print('ccccc')
-                    except Exception as e:
-                        print(e)
+                    except:
                         self.__logger.info('button_dont_click')
                     finally:
                         if first_card:
