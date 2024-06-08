@@ -3,8 +3,6 @@
 #                     SBR                       #
 #################################################
 import json
-import sys
-import threading
 import time
 import random
 from seleniumbase import Driver
@@ -34,6 +32,7 @@ class FaFa:
             ['tr', By.TAG_NAME],
             ['tr', By.TAG_NAME],
             ['tr', By.TAG_NAME]]
+        self.__buttons_ids = ['b_yes', 'b_no', 'b_unav', 'b_poh']
         self.__crud = CRUD(db)
         self.init()
 
@@ -61,8 +60,11 @@ class FaFa:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
                         5].find_elements(By.TAG_NAME, "div")[0].find_element(By.TAG_NAME, "a")
                 elif index == 7:
-                    data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
-                        5].find_element(By.TAG_NAME, "td").find_elements(By.TAG_NAME, "div")[1].text
+                    for i in range(2):
+                        data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
+                            5].find_element(By.TAG_NAME, "td").find_elements(By.TAG_NAME, "div")[i+1].text
+                        if len(data) != 0:
+                            break
                 elif index == 8:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
                         3].text
@@ -114,14 +116,12 @@ class FaFa:
                                     formated_date = f'{data[i+2][6:8]}.{monthes[data[i+2][9:]]}.{datetime.now().year} 00:00'
                                 date_time_obj = datetime.strptime(formated_date, "%d.%m.%Y %H:%M")
                                 output[-2] = date_time_obj
-                            print(output)
                         except:
                             pass
                 except:
                     pass
             elif index == 1:
                 output.append(data)
-                print(output, 'transport_type')
             elif index == 2:
                 try:
                     data = data.split('/')
@@ -132,7 +132,6 @@ class FaFa:
                     elif ',' in volume:
                         volume = volume.replace(',', '.')
                     output.extend([float(weight), float(volume)])
-                    print(output, 'weight and volume')
                 except:
                     self.error_parse(output, 2)
             elif index == 3:
@@ -155,9 +154,7 @@ class FaFa:
                     temp[2] = json.dumps(temp[2])
                     temp[3] = json.dumps(temp[3])
                     output.extend(temp)
-                    print(output, 'cities')
-                except Exception as e:
-                    print(e)
+                except:
                     self.error_parse(output, 4)
             elif index == 4:
                 try:
@@ -181,14 +178,12 @@ class FaFa:
             elif index == 6:
                 try:
                     output.extend([data.text, data.get_attribute('href')])
-                    print(output, 'company')
                 except:
                     self.error_parse(output, 2)
             elif index == 7:
                 temp = [None, None, None, None]
                 try:
                     data = data.replace('\n', ' ')
-                    print(data, 'phones')
                     if ':' in data:
                         temp[0] = data[:data.index(':')]
                         data = data[data.index(':')+2:].split(' ')
@@ -201,14 +196,12 @@ class FaFa:
                         elif '@' in i:
                             temp[3] = i
                     output.extend(temp)
-                    print(output, 'creds')
                 except:
                     self.error_parse(output, 4)
             elif index == 8:
                 success = False
                 try:
                     data = data.split('\n')[2:]
-                    print(data, 'prices')
                     for i in data:
                         if ' тнг' in i:
                             success = True
@@ -216,18 +209,16 @@ class FaFa:
                             if '.' in price:
                                 price = price.replace('.', '')
                                 output.extend([price, None])
-                                print(output, 'price')
                                 break
                     if not success:
                         raise
-                except Exception as e:
-                    print(e)
+                except:
                     self.error_parse(output, 2)
         self.__logger.info(output)
         try:
             output.append('НОВАЯ')
-            print(output, 'itog')
-            self.__crud.add_application(output)
+            print(output)
+            self.__crud.add_or_update_application(output)
         except:
             pass
 
@@ -253,7 +244,7 @@ class FaFa:
     def init(self):
         # , headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
         self.__driver = Driver(uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True,
-                               uc_cdp_events=True, extension_dir='./adblock')
+                               uc_cdp_events=True, extension_dir='./adblock', headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
         time.sleep(20)
         self.close_tab_by_domain(self.__driver, 'welcome.adblockplus.org')
         self.__driver.get(self.__config.get_config()['fafa_home_page'])
@@ -273,8 +264,7 @@ class FaFa:
                 self.__driver.find_element(By.CSS_SELECTOR, 'div#header1 > table > tbody > tr > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(4) > table > tbody > tr > td:nth-of-type(4) > form > input:nth-of-type(4)').click()
                 time.sleep(random.random() * 2)
                 break
-            except Exception as e:
-                print(e)
+            except:
                 time.sleep(3)
 
     def log_out(self):
@@ -290,30 +280,11 @@ class FaFa:
             if c >= 5:
                 break
 
-    def close_sign_up_menu(self):
-        try:
-            self.__driver.find_element(By.CSS_SELECTOR, 'div#signupmwnd > div:nth-of-type(2) > img').click()
-        except:
-            pass
-
     def fill_form(self):
         self.__driver.get(self.__config.get_config()['fafa_url'])
         self.__driver.find_element(By.CSS_SELECTOR, 'input#search1').send_keys('Казахстан')
         self.__driver.find_element(By.CSS_SELECTOR, 'input#search10').send_keys('Казахстан')
         self.__driver.find_element(By.CSS_SELECTOR, 'div#typesb > table > tbody > tr:nth-of-type(3) > td > input').click()
-
-
-    def recheck_card(self, card_id, card_obj):
-        flag = False
-        for i in range(2):
-            try:
-                data = card_obj.find_element(self.__elements[13][2], self.__elements[13][i]).text
-                flag = True
-                break
-            except:
-                pass
-        if flag:
-            return self.__crud.update_application(card_id[8:], data)
 
     def main(self) -> False or True:
         self.fill_form()
@@ -333,34 +304,29 @@ class FaFa:
                         self.__creds_index = 0
                     else:
                         self.__creds_index += 1
-                    # self.close_sign_up_menu()
-                    # time.sleep(random.random() * 3)
                     self.log_out()
                     time.sleep(5)
                     self.log_in(self.__config.get_accounts_config_fafa())
                     return False
-                if self.__crud.check_already_existed(int(card_id)):
-                    if self.recheck_card(card_id, card):
-                        continue
+                try:
+                    button = card.find_element(By.CSS_SELECTOR, f'font#head_{card_id}')
+                    self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
+                    time.sleep(1)
+                    button.click()
+                except:
+                    self.__logger.info('button_dont_click')
+                finally:
+                    if first_card:
+                        first_card = False
+                        time.sleep(self.__config.get_config()['fafa_first_card_timeout'])
                     else:
-                        return True
-                else:
+                        time.sleep(self.__config.get_config()['timeout_cards_btn'])
                     try:
-                        button = card.find_element(By.CSS_SELECTOR, f'font#head_{card_id}')
-                        self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
-                        time.sleep(1)
-                        button.click()
+                        card.find_element(By.ID, random.choice(self.__buttons_ids)).click()
+                        time.sleep(random.random() * 2)
                     except:
-                        self.__logger.info('button_dont_click')
-                    finally:
-                        if first_card:
-                            first_card = False
-                            time.sleep(self.__config.get_config()['fafa_first_card_timeout'])
-                        else:
-                            time.sleep(self.__config.get_config()['timeout_cards_btn'])
-                        #.find_elements(By.TAG_NAME, 'td')[random.randint(0, 3)].find_element(By.TAG_NAME, 'input').click()
-                        #print(card.find_elements(By.TAG_NAME, 'tr')[2].find_element(By.TAG_NAME, 'tr').find_element(By.TAG_NAME, 'tr').text)
-                        self.parse_card(card_id, card)
+                        pass
+                    self.parse_card(card_id, card)
                 self.__cards_parsed += 1
 
     def __del__(self):

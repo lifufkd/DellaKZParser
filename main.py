@@ -6,7 +6,7 @@ import os
 import threading
 import time
 import logging
-from datetime import datetime
+import datetime
 from parsers.della import Della
 from parsers.fa_fa import FaFa
 from parsers.config_parser import ConfigParser
@@ -46,5 +46,5 @@ if __name__ == '__main__':
     db = DB(config)
     #della_kz = Della(db, config, logger)
     fafa = FaFa(db, config, logger)
-    #threading.Thread(target=checker_della, args=(config.get_config()['timeout'], )).start()
+    # #threading.Thread(target=checker_della, args=(config.get_config()['timeout'], )).start()
     threading.Thread(target=checker_fafa, args=(config.get_config()['timeout'],)).start()
