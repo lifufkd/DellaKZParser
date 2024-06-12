@@ -30,6 +30,9 @@ class DB:
         self.__cursor.execute('''
         CREATE TABLE IF NOT EXISTS applications(
             row_id BIGINT unsigned PRIMARY KEY,
+            created_at DATETIME,
+            updated_at DATETIME,
+            date_of_loading DATETIME,
             date_creation DATETIME,
             date_change DATETIME,
             transport_type TEXT,
@@ -50,7 +53,7 @@ class DB:
             email TEXT,
             price INT,
             tags_payment TEXT,
-            status TEXT
+            processed INT
         )
         ''')
 

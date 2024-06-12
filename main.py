@@ -6,7 +6,7 @@ import os
 import threading
 import time
 import logging
-import datetime
+from datetime import datetime
 from parsers.della import Della
 from parsers.fa_fa import FaFa
 from parsers.config_parser import ConfigParser

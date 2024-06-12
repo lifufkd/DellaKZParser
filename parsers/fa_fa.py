@@ -33,11 +33,12 @@ class FaFa:
             ['tr', By.TAG_NAME],
             ['tr', By.TAG_NAME]]
         self.__buttons_ids = ['b_yes', 'b_no', 'b_unav', 'b_poh']
-        self.__crud = CRUD(db)
+        self.__crud = CRUD(db, config)
         self.init()
 
     def parse_card(self, card_id, card_obj):
         output = [card_id]
+        checker = 0
         for index, element in enumerate(self.__elements):
             try:
                 if index == 0:
@@ -51,8 +52,9 @@ class FaFa:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
                         3].find_element(By.TAG_NAME, "a").text
                 elif index == 4:
-                    data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
-                        4].text
+                    data = [card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
+                        4].text, card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
+                        3].text]
                 elif index == 5:
                     data = card_obj.find_elements(element[1], element[0])[0].find_elements(By.TAG_NAME, "td")[
                         3].text
@@ -71,7 +73,7 @@ class FaFa:
             except:
                 match index:
                     case 0:
-                        self.error_parse(output, 2)
+                        self.error_parse(output, 3)
                     case 1:
                         self.error_parse(output, 1)
                     case 2:
@@ -97,9 +99,12 @@ class FaFa:
                            'июля': "07", 'августа': "08", 'сентября': "09", 'октября': "10", 'ноября': "11", 'декабря': "12",}
                 try:
                     data = data.split('\n')
+                    output.extend([None, None, None])
                     if '-' in data[0]:
+                        output[-3] = datetime.strptime(f'{data[0][:5]}.{datetime.now().year} 00:00', "%d.%m.%Y %H:%M")
                         data[0] = data[0][6:]
-                    output.extend([None, None])
+                    else:
+                        output[-3] =datetime.strptime(f'{data[0]}.{datetime.now().year} 00:00', "%d.%m.%Y %H:%M")
                     for i in range(2):
                         try:
                             if data[i+2][:4] == "изм.":
@@ -125,8 +130,14 @@ class FaFa:
             elif index == 2:
                 try:
                     data = data.split('/')
-                    weight = data[0][:-2]
-                    volume = data[1][1:-2]
+                    try:
+                        weight = data[0][:-2]
+                    except:
+                        weight = None
+                    try:
+                        volume = data[1][1:-2]
+                    except:
+                        volume = None
                     if ',' in weight:
                         weight = weight.replace(',', '.')
                     elif ',' in volume:
@@ -158,8 +169,26 @@ class FaFa:
                     self.error_parse(output, 4)
             elif index == 4:
                 try:
-                    data = data.split('\n')[1]
-                    output.extend([data, None])
+                    print(data)
+                    s = str()
+                    first_data = data[0].split('\n')
+                    second_data = data[1].split('\n')
+                    if ',' in first_data[1]:
+                        cargo_type = first_data[1][:first_data[1].index(',')]
+                        s += first_data[1][first_data[1].index(',')+1:]
+                    else:
+                        cargo_type = first_data[1]
+                    if len(second_data) > 1:
+                        for i in second_data[1:]:
+                            if 'тнг' not in i:
+                                s += i
+                            else:
+                                break
+                        if len(s) != 0:
+                            s = s.replace('\n', ' ')
+                        else:
+                            s = None
+                    output.extend([cargo_type, s])
                 except:
                     self.error_parse(output, 2)
             elif index == 5:
@@ -177,7 +206,11 @@ class FaFa:
                     self.error_parse(output)
             elif index == 6:
                 try:
-                    output.extend([data.text, data.get_attribute('href')])
+                    if 'частное лицо' in data.text.lower():
+                        company_name = 'Частное лицо'
+                    else:
+                        company_name = data.text
+                    output.extend([company_name, data.get_attribute('href')])
                 except:
                     self.error_parse(output, 2)
             elif index == 7:
@@ -206,9 +239,10 @@ class FaFa:
                         if ' тнг' in i:
                             success = True
                             price = i[:i.index(' тнг')]
+                            tags = json.dumps([i[i.index(' тнг')+6:]])
                             if '.' in price:
                                 price = price.replace('.', '')
-                                output.extend([price, None])
+                                output.extend([price, tags])
                                 break
                     if not success:
                         raise
@@ -216,11 +250,15 @@ class FaFa:
                     self.error_parse(output, 2)
         self.__logger.info(output)
         try:
-            output.append('НОВАЯ')
-            print(output)
-            self.__crud.add_or_update_application(output)
-        except:
-            pass
+            output.append(0)
+            for i in output:
+                if i is None:
+                    checker += 1
+            if checker < 21:
+                print(output)
+                self.__crud.add_or_update_application(output)
+        except Exception as e:
+            print(e)
 
     def close_tab_by_domain(self, driver, domain_name):
         # Get the handle of the current window
@@ -242,10 +280,12 @@ class FaFa:
         driver.switch_to.window(original_window)
 
     def init(self):
-        # , headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+        # product version
         self.__driver = Driver(uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True,
                                uc_cdp_events=True, extension_dir='./adblock', headless2=True, headed=False, agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36')
         time.sleep(20)
+        # self.__driver = Driver(uc=True, no_sandbox=True, proxy="proxy1", uc_cdp=True,
+        #                        uc_cdp_events=True)
         self.close_tab_by_domain(self.__driver, 'welcome.adblockplus.org')
         self.__driver.get(self.__config.get_config()['fafa_home_page'])
         self.log_in(self.__config.get_accounts_config_fafa())
@@ -311,7 +351,7 @@ class FaFa:
                 try:
                     button = card.find_element(By.CSS_SELECTOR, f'font#head_{card_id}')
                     self.__driver.execute_script("arguments[0].scrollIntoView(true);", button)
-                    time.sleep(1)
+                    time.sleep(2)
                     button.click()
                 except:
                     self.__logger.info('button_dont_click')
@@ -323,7 +363,7 @@ class FaFa:
                         time.sleep(self.__config.get_config()['timeout_cards_btn'])
                     try:
                         card.find_element(By.ID, random.choice(self.__buttons_ids)).click()
-                        time.sleep(random.random() * 2)
+                        time.sleep(3)
                     except:
                         pass
                     self.parse_card(card_id, card)
