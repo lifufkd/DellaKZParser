@@ -81,7 +81,7 @@ class FaFa:
                     case 3:
                         self.error_parse(output, 4)
                     case 4:
-                        self.error_parse(output, 2)
+                        self.error_parse(output, 3)
                     case 5:
                         self.error_parse(output, 1)
                     case 6:
@@ -170,27 +170,28 @@ class FaFa:
             elif index == 4:
                 try:
                     print(data)
-                    s = str()
+                    cargo_addition = list()
+                    comment = None
                     first_data = data[0].split('\n')
                     second_data = data[1].split('\n')
                     if ',' in first_data[1]:
                         cargo_type = first_data[1][:first_data[1].index(',')]
-                        s += first_data[1][first_data[1].index(',')+1:]
+                        cargo_addition.append(first_data[1][first_data[1].index(',')+1:])
                     else:
                         cargo_type = first_data[1]
                     if len(second_data) > 1:
-                        for i in second_data[1:]:
-                            if 'тнг' not in i:
-                                s += i
-                            else:
-                                break
-                        if len(s) != 0:
-                            s = s.replace('\n', ' ')
+                        cargo_addition.append(second_data[1])
+                        if len(cargo_addition) != 0:
+                            for index, i in enumerate(cargo_addition):
+                                cargo_addition[index] = i.replace('\n', ' ')
                         else:
-                            s = None
-                    output.extend([cargo_type, s])
+                            cargo_addition = None
+                    if len(second_data) > 2:
+                        if 'тнг' not in second_data[2]:
+                            comment = second_data[2]
+                    output.extend([cargo_type, json.dumps(cargo_addition), comment])
                 except:
-                    self.error_parse(output, 2)
+                    self.error_parse(output, 3)
             elif index == 5:
                 success = False
                 try:

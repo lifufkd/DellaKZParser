@@ -44,6 +44,7 @@ class DB:
             city_addition_target TEXT,
             cargo_type TEXT,
             cargo_addition TEXT,
+            comment TEXT,
             tags TEXT,
             company_name TEXT,
             company_link TEXT,
