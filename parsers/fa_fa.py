@@ -102,21 +102,20 @@ class FaFa:
                     output.extend([None, None, None])
                     if '-' in data[0]:
                         output[-3] = datetime.strptime(f'{data[0][:5]}.{datetime.now().year} 00:00', "%d.%m.%Y %H:%M")
-                        data[0] = data[0][6:]
                     else:
                         output[-3] =datetime.strptime(f'{data[0]}.{datetime.now().year} 00:00', "%d.%m.%Y %H:%M")
                     for i in range(2):
                         try:
                             if data[i+2][:4] == "изм.":
                                 if ':' in data[i+2][6:]:
-                                    formated_date = f'{data[0]}.{datetime.now().year} {data[i+2][6:]}'
+                                    formated_date = f'{datetime.now().day}.{datetime.now().month}.{datetime.now().year} {data[i+2][6:]}'
                                 else:
                                     formated_date = f'{data[i+2][6:8]}.{monthes[data[i+2][9:]]}.{datetime.now().year} 00:00'
                                 date_time_obj = datetime.strptime(formated_date, "%d.%m.%Y %H:%M")
                                 output[-1] = date_time_obj
                             elif data[i+2][:4] == "доб.":
                                 if ':' in data[i+2][6:]:
-                                    formated_date = f'{data[0]}.{datetime.now().year} {data[i+2][6:]}'
+                                    formated_date = f'{datetime.now().day}.{datetime.now().month}.{datetime.now().year} {data[i+2][6:]}'
                                 else:
                                     formated_date = f'{data[i+2][6:8]}.{monthes[data[i+2][9:]]}.{datetime.now().year} 00:00'
                                 date_time_obj = datetime.strptime(formated_date, "%d.%m.%Y %H:%M")
@@ -323,8 +322,8 @@ class FaFa:
 
     def fill_form(self):
         self.__driver.get(self.__config.get_config()['fafa_url'])
-        self.__driver.find_element(By.CSS_SELECTOR, 'input#search1').send_keys('Казахстан')
-        self.__driver.find_element(By.CSS_SELECTOR, 'input#search10').send_keys('Казахстан')
+        self.__driver.find_element(By.CSS_SELECTOR, 'input#search1').send_keys(self.__config.get_config()['source_country'])
+        self.__driver.find_element(By.CSS_SELECTOR, 'input#search10').send_keys(self.__config.get_config()['destination_country'])
         self.__driver.find_element(By.CSS_SELECTOR, 'div#typesb > table > tbody > tr:nth-of-type(3) > td > input').click()
 
     def main(self) -> False or True:
