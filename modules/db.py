@@ -53,6 +53,7 @@ class DB:
             phone_number_whatsapp TEXT,
             email TEXT,
             price INT,
+            currency TEXT,
             tags_payment TEXT,
             processed INT
         )

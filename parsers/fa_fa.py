@@ -89,7 +89,7 @@ class FaFa:
                     case 7:
                         self.error_parse(output, 4)
                     case 8:
-                        self.error_parse(output, 2)
+                        self.error_parse(output, 3)
                     case _:
                         self.error_parse(output)
                 continue
@@ -233,21 +233,28 @@ class FaFa:
                     self.error_parse(output, 4)
             elif index == 8:
                 success = False
+                output.extend([None, None, None])
                 try:
                     data = data.split('\n')[2:]
                     for i in data:
-                        if ' тнг' in i:
+                        if 'usd.' in i or 'руб.' in i or 'тнг.' in i:
+                            sub = i.strip()
+                            first_space_index = sub.index(' ')
+                            second_space_index = sub.index(' ', first_space_index+1)
                             success = True
-                            price = i[:i.index(' тнг')]
-                            tags = json.dumps([i[i.index(' тнг')+6:]])
+                            price = sub[:first_space_index]
+                            tags = json.dumps([sub[second_space_index+1:]])
+                            currency = sub[first_space_index+1:second_space_index-1]
                             if '.' in price:
                                 price = price.replace('.', '')
-                                output.extend([price, tags])
+                                output[-1] = tags
+                                output[-2] = currency
+                                output[-3] = price
                                 break
                     if not success:
                         raise
                 except:
-                    self.error_parse(output, 2)
+                    pass
         self.__logger.info(output)
         try:
             output.append(0)
